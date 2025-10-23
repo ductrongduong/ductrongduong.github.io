@@ -1,11 +1,46 @@
-<!DOCTYPE html>
-<html lang = "en">
-    <head>
-        <title>
-            My site!
-        </title>
-    </head>
-    <body>
-        <h1>This is my website!</h1>
-    </body>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT Sentence Trainer (Minimal)</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+    <div class="notes-section">
+        <label for="notes">Take Notes:</label>
+        <textarea id="notes" rows="5" cols="80" placeholder="Write your notes here..."></textarea>
+    </div>
+
+    <div class="file-inputs">
+        <div class="field">
+            <input id="mp4File" type="file" accept="video/mp4"/>
+            <button class="btn" id="loadMp4Btn">Load MP4</button>
+        </div>
+        <div class="field">
+            <input id="srtFile" type="file" accept=".srt,text/plain"/>
+            <button class="btn" id="loadSrtBtn">Load SRT</button>
+        </div>
+    </div>
+
+    <video id="videoPlayer" width="900" controls>
+        <source id="videoSource" src="" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div class="now" id="now">
+        <div><span class="idx">#<span id="curIdx">–</span></span> — <span class="time" id="curTime">00:00:00.000 → 00:00:00.000</span></div>
+        <div id="curText">Load an SRT to begin.</div>
+        <div class="nav">
+            <button class="btn" id="prevBtn">← Prev</button>
+            <button class="btn" id="nextBtn">Next →</button>
+        </div>
+    </div>
+
+    <button class="btn" id="toggleSentenceListBtn">Hide Sentences</button>
+    <div id="sentenceList"></div>
+</div>
+<script src="app.js"></script>
+</body>
 </html>
