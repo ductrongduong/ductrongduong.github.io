@@ -2,45 +2,311 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SRT Sentence Trainer (Minimal)</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>English Practice — Record, Playback & Download MP3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root { --bg:#0f172a; --card:#111827; --ink:#e5e7eb; --accent:#60a5fa; --muted:#9ca3af; --ok:#22c55e; --warn:#f59e0b; }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color:var(--ink); background: radial-gradient(1200px 800px at 70% -10%, #1f2937, transparent), var(--bg); }
+        header { padding: 28px 20px 10px; text-align:center; }
+        header h1 { margin:0 0 6px; font-size: clamp(22px, 3.5vw, 36px); }
+        header p { margin:0; color:var(--muted); }
+        .wrap { max-width: 720px; margin: 20px auto 60px; padding: 0 16px; }
+        .card { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:18px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+        h2 { margin:0 0 10px; font-size: 18px; color:#fff; }
+        .btn { appearance:none; border:1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color:#fff; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; transition:.15s transform, .15s background, .15s border; }
+        .btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.3); }
+        .btn.primary { background: linear-gradient(180deg, #3b82f6, #2563eb); border-color:#1d4ed8; }
+        .btn.warn { background: linear-gradient(180deg, #f59e0b, #d97706); border-color:#b45309; }
+        .btn.ok { background: linear-gradient(180deg, #22c55e, #16a34a); border-color:#15803d; }
+        .btn.ghost { background: transparent; border-color: rgba(255,255,255,.16); }
+        .controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:8px 0 4px; }
+        .status { font-size: 13px; color:var(--muted); margin-left:auto; }
+        .meter-wrap { height: 120px; border-radius:12px; background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); margin-top:10px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+        canvas { width:100%; height:100%; display:block; }
+        .audio-out { display:flex; align-items:center; gap:12px; margin-top:12px; }
+        audio { width:100%; }
+        .downloads { display:flex; gap:10px; flex-wrap:wrap; }
+        .note { color:var(--muted); font-size:13px; margin-top:8px; }
+        .badge { display:inline-block; font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06); margin-left:6px; }
+        .hidden { display:none !important; }
+        footer { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
 </head>
 <body>
-<div class="container">
-    <div class="notes-section">
-        <label for="notes">Take Notes:</label>
-        <textarea id="notes" rows="5" cols="80" placeholder="Write your notes here..."></textarea>
-    </div>
+<header>
+    <h1>English Practice — Recorder</h1>
+    <p>Record your voice, play it back, and download as MP3 or WAV.</p>
+</header>
 
-    <div class="file-inputs">
-        <div class="field">
-            <input id="mp4File" type="file" accept="video/mp4"/>
-            <button class="btn" id="loadMp4Btn">Load MP4</button>
+<div class="wrap">
+    <section class="card">
+        <h2>Recording Studio</h2>
+        <div class="controls">
+            <button id="btnInit" class="btn">Enable Microphone</button>
+            <button id="btnRecord" class="btn primary hidden">● Start Recording</button>
+            <button id="btnStop" class="btn warn hidden">■ Stop</button>
+            <span class="status" id="status">Mic not enabled</span>
         </div>
-        <div class="field">
-            <input id="srtFile" type="file" accept=".srt,text/plain"/>
-            <button class="btn" id="loadSrtBtn">Load SRT</button>
+
+        <div class="meter-wrap">
+            <canvas id="wave"></canvas>
+            <div id="nomic" style="position:absolute; font-size:13px; color:var(--muted);">Waveform shows here while recording</div>
         </div>
-    </div>
 
-    <video id="videoPlayer" width="900" controls>
-        <source id="videoSource" src="" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
-
-    <div class="now" id="now">
-        <div><span class="idx">#<span id="curIdx">–</span></span> — <span class="time" id="curTime">00:00:00.000 → 00:00:00.000</span></div>
-        <div id="curText">Load an SRT to begin.</div>
-        <div class="nav">
-            <button class="btn" id="prevBtn">← Prev</button>
-            <button class="btn" id="nextBtn">Next →</button>
+        <div class="audio-out hidden" id="playerWrap">
+            <audio id="player" controls></audio>
+            <button id="btnReplay" class="btn ghost">Replay</button>
         </div>
-    </div>
 
-    <button class="btn" id="toggleSentenceListBtn">Hide Sentences</button>
-    <div id="sentenceList"></div>
+        <div class="downloads hidden" id="dlWrap">
+            <a id="dlMp3" class="btn ok" download="practice.mp3">Download MP3</a>
+            <a id="dlWav" class="btn" download="practice.wav">Download WAV</a>
+            <span id="mp3Badge" class="badge hidden">MP3 ready</span>
+            <span id="mp3Warn" class="badge hidden" title="Fallback to WAV if MP3 encoder not loaded">MP3 not available</span>
+        </div>
+
+        <div class="note">If MP3 isn’t available in your browser, the WAV download always works.</div>
+    </section>
 </div>
-<script src="app.js"></script>
+
+<footer>Works offline once loaded. You’ll be asked for mic permission the first time you record.</footer>
+
+<!-- MP3 encoder (lamejs) via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+
+<script>
+    // ------- Shortcuts
+    const $ = s => document.querySelector(s);
+    const btnInit = $('#btnInit'), btnRecord = $('#btnRecord'), btnStop = $('#btnStop');
+    const statusEl = $('#status'), player = $('#player'), playerWrap = $('#playerWrap');
+    const dlWrap = $('#dlWrap'), dlMp3 = $('#dlMp3'), dlWav = $('#dlWav'), mp3Badge = $('#mp3Badge'), mp3Warn = $('#mp3Warn');
+    const waveCanvas = $('#wave'), nomic = $('#nomic');
+    const ctx2d = waveCanvas.getContext('2d');
+
+    // ------- Audio state
+    let audioCtx, analyser, source, processor, stream;
+    let recording = false;
+    let leftChannel = [];
+    let recordingLength = 0;
+    const BUFFER_SIZE = 4096;
+    const SAMPLE_RATE_TARGET = 44100;
+
+    function setStatus(t){ statusEl.textContent = t; }
+
+    // Canvas DPI fit
+    function fitCanvas(){
+        const dpr = window.devicePixelRatio || 1;
+        waveCanvas.width = waveCanvas.clientWidth * dpr;
+        waveCanvas.height = waveCanvas.clientHeight * dpr;
+        ctx2d.setTransform(dpr,0,0,dpr,0,0);
+    }
+    window.addEventListener('resize', fitCanvas); fitCanvas();
+
+    // Visualizer
+    function drawWave(){
+        if(!analyser){ ctx2d.clearRect(0,0,waveCanvas.width,waveCanvas.height); return; }
+        requestAnimationFrame(drawWave);
+        const w = waveCanvas.clientWidth, h = waveCanvas.clientHeight;
+        const data = new Uint8Array(analyser.fftSize);
+        analyser.getByteTimeDomainData(data);
+        ctx2d.clearRect(0,0,w,h);
+        ctx2d.beginPath();
+        const mid = h/2;
+        for(let x=0; x<w; x++){
+            const i = Math.floor(x / w * data.length);
+            const v = (data[i]-128)/128;
+            const y = mid + v * (h/2 - 6);
+            if(x===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
+        }
+        ctx2d.lineWidth = 2;
+        ctx2d.strokeStyle = "rgba(255,255,255,.85)";
+        ctx2d.stroke();
+    }
+
+    async function initMic(){
+        try{
+            stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true, channelCount:1 }, video:false });
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE_TARGET });
+            source = audioCtx.createMediaStreamSource(stream);
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 2048;
+            processor = audioCtx.createScriptProcessor(BUFFER_SIZE, 1, 1);
+            source.connect(analyser);
+            analyser.connect(processor);
+            processor.connect(audioCtx.destination);
+            processor.onaudioprocess = e => {
+                if(!recording) return;
+                const input = e.inputBuffer.getChannelData(0);
+                leftChannel.push(new Float32Array(input));
+                recordingLength += input.length;
+            };
+            nomic.classList.add('hidden');
+            drawWave();
+            btnInit.classList.add('hidden');
+            btnRecord.classList.remove('hidden');
+            setStatus('Mic ready. Click “Start Recording”.');
+        }catch(err){
+            console.error(err);
+            setStatus('Microphone access was denied or unavailable.');
+        }
+    }
+
+    function startRec(){
+        if(!audioCtx) return;
+        recording = true;
+        leftChannel = [];
+        recordingLength = 0;
+        btnRecord.classList.add('hidden');
+        btnStop.classList.remove('hidden');
+        playerWrap.classList.add('hidden');
+        dlWrap.classList.add('hidden');
+        setStatus('Recording… Speak clearly close to your mic.');
+    }
+
+    // Add at the top
+    const recordings = [];
+
+    // Update stopRec function
+    function stopRec(){
+        recording = false;
+        btnStop.classList.add('hidden');
+        btnRecord.classList.remove('hidden');
+        setStatus('Processing audio…');
+        const wavBlob = encodeWAV(mergeBuffers(leftChannel, recordingLength), audioCtx.sampleRate);
+        const wavUrl = URL.createObjectURL(wavBlob);
+
+        // Store recording
+        recordings.unshift({ wavBlob, wavUrl });
+
+        renderRecordings();
+
+        player.src = wavUrl;
+        playerWrap.classList.remove('hidden');
+        dlWrap.classList.remove('hidden');
+        dlWav.href = wavUrl;
+        toMp3(wavBlob).then(mp3Blob => {
+            if(mp3Blob){
+                const mp3Url = URL.createObjectURL(mp3Blob);
+                dlMp3.href = mp3Url;
+                mp3Badge.classList.remove('hidden');
+                mp3Warn.classList.add('hidden');
+                // Store MP3
+                recordings[0].mp3Blob = mp3Blob;
+                recordings[0].mp3Url = mp3Url;
+                renderRecordings();
+            }else{
+                dlMp3.removeAttribute('href');
+                mp3Badge.classList.add('hidden');
+                mp3Warn.classList.remove('hidden');
+            }
+            setStatus('Done. You can replay or download.');
+        });
+    }
+
+    // Add this function to render all recordings
+    function renderRecordings(){
+        let list = document.getElementById('recordingsList');
+        if(!list){
+            list = document.createElement('div');
+            list.id = 'recordingsList';
+            list.className = 'card';
+            list.style.marginTop = '24px';
+            document.querySelector('.wrap').appendChild(list);
+        }
+        list.innerHTML = '<h2>Previous Recordings</h2>' + recordings.map((rec, i) => `
+        <div style="margin-bottom:12px;">
+            <audio controls src="${rec.wavUrl}" style="width:220px;"></audio>
+            <a href="${rec.wavUrl}" download="practice${i+1}.wav" class="btn" style="margin-left:8px;">WAV</a>
+            ${rec.mp3Url ? `<a href="${rec.mp3Url}" download="practice${i+1}.mp3" class="btn ok" style="margin-left:4px;">MP3</a>` : ''}
+        </div>
+    `).join('');
+    }
+
+    function mergeBuffers(buffers, length){
+        const out = new Float32Array(length);
+        let offset = 0;
+        for(const b of buffers){ out.set(b, offset); offset += b.length; }
+        return out;
+    }
+
+    function floatTo16BitPCM(float32){
+        const view = new DataView(new ArrayBuffer(float32.length * 2));
+        let offset = 0;
+        for(let i=0; i<float32.length; i++, offset += 2){
+            let s = Math.max(-1, Math.min(1, float32[i]));
+            s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            view.setInt16(offset, s, true);
+        }
+        return view;
+    }
+
+    function writeString(view, offset, str){ for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
+
+    function encodeWAV(float32, sampleRate){
+        const pcm = floatTo16BitPCM(float32);
+        const buffer = new ArrayBuffer(44 + pcm.byteLength);
+        const view = new DataView(buffer);
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + pcm.byteLength, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, pcm.byteLength, true);
+        new Uint8Array(buffer, 44).set(new Uint8Array(pcm.buffer));
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    async function toMp3(wavBlob){
+        try{
+            if(typeof lamejs === 'undefined' && typeof lame === 'undefined') return null;
+            const arrayBuf = await wavBlob.arrayBuffer();
+            const view = new DataView(arrayBuf);
+            const numChannels = view.getUint16(22, true);
+            const sampleRate = view.getUint32(24, true);
+            const bitsPerSample = view.getUint16(34, true);
+            const dataOffset = 44;
+            const samples = new Int16Array(arrayBuf, dataOffset);
+            if(bitsPerSample !== 16 || numChannels !== 1) console.warn('Unexpected WAV format; attempting encode.');
+            const mp3Encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
+            const block = 1152;
+            const mp3Data = [];
+            for(let i=0;i<samples.length;i+=block){
+                const chunk = samples.subarray(i, i+block);
+                const buf = mp3Encoder.encodeBuffer(chunk);
+                if(buf.length) mp3Data.push(buf);
+            }
+            const end = mp3Encoder.flush();
+            if(end.length) mp3Data.push(end);
+            return new Blob(mp3Data, { type: 'audio/mpeg' });
+        }catch(e){
+            console.error('MP3 encode error', e);
+            return null;
+        }
+    }
+
+    // UI hooks
+    btnInit.addEventListener('click', initMic);
+    btnRecord.addEventListener('click', startRec);
+    btnStop.addEventListener('click', stopRec);
+    $('#btnReplay').addEventListener('click', () => { player.currentTime = 0; player.play(); });
+
+    // cleanup
+    window.addEventListener('beforeunload', () => {
+        try{
+            if(stream) stream.getTracks().forEach(t => t.stop());
+            if(audioCtx) audioCtx.close();
+        }catch(e){}
+    });
+</script>
 </body>
 </html>
