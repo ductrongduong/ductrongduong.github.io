@@ -25,7 +25,8 @@ class SRTPlayer {
             loadMp4Btn: $('loadMp4Btn'),
             sentenceList: $('sentenceList'),
             toggleBtn: $('toggleSentenceListBtn'),
-            repeatBtn: $('repeatBtn')
+            repeatBtn: $('repeatBtn'),
+            notes: $('notes'),
         };
 
         // State
@@ -39,6 +40,38 @@ class SRTPlayer {
         this.initEventListeners();
         this.renderSentenceList();
         this.elements.toggleBtn.textContent = 'Hide Sentences';
+    }
+
+    // Add after the constructor
+    saveState() {
+        const state = {
+            currentIndex: this.currentIndex,
+            cues: this.cues,
+            notes: this.elements.notes?.value || '',
+            sentenceListVisible: this.sentenceListVisible
+        };
+        localStorage.setItem('srtPlayerState', JSON.stringify(state));
+    }
+
+    loadState() {
+        try {
+            const saved = localStorage.getItem('srtPlayerState');
+            if (!saved) return false;
+
+            const state = JSON.parse(saved);
+            this.cues = state.cues || [];
+            this.currentIndex = state.currentIndex ?? -1;
+            this.sentenceListVisible = state.sentenceListVisible ?? true;
+
+            if (this.elements.notes && state.notes) {
+                this.elements.notes.value = state.notes;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Failed to load state:', error);
+            return false;
+        }
     }
 
     // Time Utility Methods
@@ -100,6 +133,7 @@ class SRTPlayer {
             this.elements.curText.textContent = cue.text;
         }
         this.renderSentenceList();
+        this.saveState();
     }
 
     renderSentenceList() {
@@ -215,6 +249,7 @@ class SRTPlayer {
             this.sentenceListVisible = !this.sentenceListVisible;
             this.renderSentenceList();
             this.elements.toggleBtn.textContent = this.sentenceListVisible ? 'Hide Sentences' : 'Show Sentences';
+            this.saveState();
         });
 
         // Sentence list clicks
@@ -269,6 +304,17 @@ class SRTPlayer {
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     const player = new SRTPlayer();
-    player.autoLoadMp4();
-    player.autoLoadSrt();
+
+    // Try to restore previous state first
+    const stateLoaded = player.loadState();
+
+    if (stateLoaded) {
+        // Restore UI from saved state
+        player.updateCurrentSentence();
+        player.elements.toggleBtn.textContent = player.sentenceListVisible ? 'Hide Sentences' : 'Show Sentences';
+    } else {
+        // Load defaults if no saved state
+        player.autoLoadMp4();
+        player.autoLoadSrt();
+    }
 });
