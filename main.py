@@ -78,6 +78,6 @@ def merge_srt_file(input_path: str, output_path: str = None):
         sys.stdout.write(out)
 
 if __name__ == "__main__":
-    input_path = "google.srt"
+    input_path = "Gmail past project.srt"
     output_path = input_path.replace(".srt", ".merged.srt")
     merge_srt_file(input_path, output_path)

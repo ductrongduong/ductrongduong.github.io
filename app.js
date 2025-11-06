@@ -233,7 +233,7 @@ class SRTPlayer {
                     this.prevSentence();
                 } else if (e.key === '.' || e.key === 'ArrowRight') {
                     this.nextSentence();
-                } else if (e.key === 'r') {
+                } else if (e.key === 'r'|| e.key === 'm') {
                     this.playCurrentSentence();
                 } else if (e.key === ' ') {
                     e.preventDefault();
