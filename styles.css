@@ -37,6 +37,13 @@ body {
     align-items: center;
 }
 
+.now-right .btn {
+    padding: 20px 32px;
+    font-size: 22px;
+    min-width: 140px;
+    font-weight: 600;
+}
+
 .now-left {
     flex: 1;
     min-width: 0;
