@@ -24,17 +24,24 @@
         </div>
     </div>
 
-    <video id="videoPlayer" width="900" controls>
-        <source id="videoSource" src="" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
+    <div class="video-container">
+        <video id="videoPlayer" controls>
+            <source id="videoSource" src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
 
-    <div class="now" id="now">
-        <div><span class="idx">#<span id="curIdx">–</span></span> — <span class="time" id="curTime">00:00:00.000 → 00:00:00.000</span></div>
-        <div id="curText">Load an SRT to begin.</div>
-        <div class="nav">
-            <button class="btn" id="prevBtn">← Prev</button>
-            <button class="btn" id="nextBtn">Next →</button>
+    <div class="now-right">
+        <button class="btn" id="prevBtn">← Prev</button>
+        <button class="btn" id="nextBtn">Next →</button>
+        <button class="btn" id="repeatBtn">Repeat</button>
+    </div>
+
+    <!-- now area split into left (info) and right (controls). inline flex used for quick alignment -->
+    <div class="now" id="now" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+        <div class="now-left" style="flex:1;min-width:0;">
+            <div><span class="idx">#<span id="curIdx">–</span></span> — <span class="time" id="curTime">00:00:00.000 → 00:00:00.000</span></div>
+            <div id="curText">Load an SRT to begin.</div>
         </div>
     </div>
 

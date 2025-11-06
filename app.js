@@ -24,7 +24,8 @@ class SRTPlayer {
             mp4File: $('mp4File'),
             loadMp4Btn: $('loadMp4Btn'),
             sentenceList: $('sentenceList'),
-            toggleBtn: $('toggleSentenceListBtn')
+            toggleBtn: $('toggleSentenceListBtn'),
+            repeatBtn: $('repeatBtn')
         };
 
         // State
@@ -207,6 +208,7 @@ class SRTPlayer {
         this.elements.loadSrtBtn.addEventListener('click', () => this.loadSrt());
         this.elements.prevBtn.addEventListener('click', () => this.prevSentence());
         this.elements.nextBtn.addEventListener('click', () => this.nextSentence());
+        this.elements.repeatBtn.addEventListener('click', () => this.playCurrentSentence());
 
         // Toggle sentence list
         this.elements.toggleBtn.addEventListener('click', () => {
