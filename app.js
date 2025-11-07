@@ -4,19 +4,29 @@ const DEFAULT_FILES = {
     srt: 'gump.srt'
 };
 
+const BUTTON_CONFIG = [
+    { id: 'record', label: '🎤 Start Recording', action: 'toggleRecording', disabled: false },
+    { id: 'playback', label: '▶️ Playback', action: 'playbackRecording', disabled: true },
+    { id: 'prev', label: '← Prev', action: 'prevSentence', disabled: false },
+    { id: 'next', label: 'Next →', action: 'nextSentence', disabled: false },
+    { id: 'repeat', label: 'Repeat', action: 'playCurrentSentence', disabled: false }
+];
+
 // DOM Helper
 const $ = id => document.getElementById(id);
 
 // SRT Player Class
 class SRTPlayer {
     constructor() {
+        // Initialize button groups first
+        this.buttonGroups = { right: {}, left: {} };
+        this.createControlButtons();
+
         // DOM Elements
         this.elements = {
             curIdx: $('curIdx'),
             curTime: $('curTime'),
             curText: $('curText'),
-            prevBtn: $('prevBtn'),
-            nextBtn: $('nextBtn'),
             srtFile: $('srtFile'),
             loadSrtBtn: $('loadSrtBtn'),
             videoPlayer: $('videoPlayer'),
@@ -25,13 +35,10 @@ class SRTPlayer {
             loadMp4Btn: $('loadMp4Btn'),
             sentenceList: $('sentenceList'),
             toggleBtn: $('toggleSentenceListBtn'),
-            repeatBtn: $('repeatBtn'),
             notes: $('notes'),
-            prevBtnLeft: $('prevBtnLeft'),
-            nextBtnLeft: $('nextBtnLeft'),
-            repeatBtnLeft: $('repeatBtnLeft'),
             lockBtn: $('lockBtn'),
-
+            ...this.buttonGroups.right,
+            ...this.buttonGroups.left
         };
 
         // State
@@ -41,11 +48,43 @@ class SRTPlayer {
         this.onTimeUpdate = null;
         this.lastSwipe = 0;
         this.isVideoLocked = false;
+        this.mediaRecorder = null;
+        this.audioChunks = [];
+        this.recordedAudioURL = null;
+        this.isRecording = false;
+        this.playbackAudio = null;
 
         // Initialize
         this.initEventListeners();
         this.renderSentenceList();
         this.elements.toggleBtn.textContent = 'Hide Sentences';
+    }
+
+    createControlButtons() {
+        const rightContainer = $('rightControls');
+        const leftContainer = $('leftControls');
+
+        BUTTON_CONFIG.forEach(config => {
+            // Create right button
+            const rightBtn = document.createElement('button');
+            rightBtn.className = 'btn';
+            rightBtn.id = `${config.id}Btn`;
+            rightBtn.textContent = config.label;
+            rightBtn.disabled = config.disabled;
+            rightBtn.dataset.action = config.action;
+            rightContainer.appendChild(rightBtn);
+            this.buttonGroups.right[`${config.id}Btn`] = rightBtn;
+
+            // Create left button
+            const leftBtn = document.createElement('button');
+            leftBtn.className = 'btn';
+            leftBtn.id = `${config.id}BtnLeft`;
+            leftBtn.textContent = config.label;
+            leftBtn.disabled = config.disabled;
+            leftBtn.dataset.action = config.action;
+            leftContainer.appendChild(leftBtn);
+            this.buttonGroups.left[`${config.id}BtnLeft`] = leftBtn;
+        });
     }
 
     // Add after the constructor
@@ -208,18 +247,147 @@ class SRTPlayer {
 
     toggleVideoLock() {
         this.isVideoLocked = !this.isVideoLocked;
+        const locked = this.isVideoLocked;
 
-        if (this.isVideoLocked) {
-            this.elements.lockBtn.textContent = '🔒 Locked';
-            this.elements.lockBtn.classList.add('locked');
-            this.elements.videoPlayer.controls = false; // Hide all native controls
+        this.updateButton('lockBtn', {
+            text: locked ? '🔒 Locked' : '🔓 Unlock',
+            addClass: locked ? 'locked' : null,
+            removeClass: locked ? null : 'locked'
+        });
+
+        if (locked) {
+            this.elements.videoPlayer.setAttribute('controlslist', 'nodownload nofullscreen');
         } else {
-            this.elements.lockBtn.textContent = '🔓 Unlock';
-            this.elements.lockBtn.classList.remove('locked');
-            this.elements.videoPlayer.controls = true; // Show native controls
+            this.elements.videoPlayer.removeAttribute('controlslist');
         }
 
         this.saveState();
+    }
+
+    updateButton(baseId, config) {
+        const button = this.elements[baseId];
+        if (button) {
+            if (config.text) button.textContent = config.text;
+            if (config.disabled !== undefined) button.disabled = config.disabled;
+            if (config.addClass) button.classList.add(config.addClass);
+            if (config.removeClass) button.classList.remove(config.removeClass);
+        }
+    }
+
+    updateButtonGroup(baseId, config) {
+        // Update both right and left versions of the button
+        ['', 'Left'].forEach(suffix => {
+            const button = this.elements[`${baseId}${suffix}`];
+            if (button) {
+                if (config.text) button.textContent = config.text;
+                if (config.disabled !== undefined) button.disabled = config.disabled;
+                if (config.addClass) button.classList.add(config.addClass);
+                if (config.removeClass) button.classList.remove(config.removeClass);
+            }
+        });
+    }
+
+    async startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.mediaRecorder = new MediaRecorder(stream);
+            this.audioChunks = [];
+
+            this.mediaRecorder.addEventListener('dataavailable', event => {
+                this.audioChunks.push(event.data);
+            });
+
+            this.mediaRecorder.addEventListener('stop', () => {
+                const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                this.recordedAudioURL = URL.createObjectURL(audioBlob);
+                this.updateButtonGroup('playbackBtn', { disabled: false });
+
+                // Stop all tracks to release the microphone
+                stream.getTracks().forEach(track => track.stop());
+            });
+
+            this.mediaRecorder.start();
+            this.isRecording = true;
+            this.updateButtonGroup('recordBtn', {
+                text: '⏹️ Stop Recording',
+                addClass: 'recording'
+            });
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+            alert('Could not access microphone. Please grant permission.');
+        }
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.isRecording) {
+            this.mediaRecorder.stop();
+            this.isRecording = false;
+            this.updateButtonGroup('recordBtn', {
+                text: '🎤 Start Recording',
+                removeClass: 'recording'
+            });
+        }
+    }
+
+    toggleRecording() {
+        if (this.isRecording) {
+            this.stopRecording();
+        } else {
+            this.startRecording();
+        }
+    }
+
+    playbackRecording() {
+        if (!this.recordedAudioURL) return;
+
+        // If already playing, stop it
+        if (this.playbackAudio && !this.playbackAudio.paused) {
+            this.stopPlayback();
+            return;
+        }
+
+        // Stop previous playback if any
+        if (this.playbackAudio) {
+            this.playbackAudio.pause();
+            this.playbackAudio.currentTime = 0;
+            this.playbackAudio = null;
+        }
+
+        this.playbackAudio = new Audio(this.recordedAudioURL);
+        this.updatePlaybackUI(true);
+
+        // Handle play promise to prevent AbortError
+        const playPromise = this.playbackAudio.play();
+
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.error('Playback error:', error);
+                this.updatePlaybackUI(false);
+                this.playbackAudio = null;
+            });
+        }
+
+        this.playbackAudio.addEventListener('ended', () => {
+            this.updatePlaybackUI(false);
+            this.playbackAudio = null;
+        });
+    }
+
+    stopPlayback() {
+        if (this.playbackAudio) {
+            this.playbackAudio.pause();
+            this.playbackAudio.currentTime = 0;
+            this.updatePlaybackUI(false);
+            this.playbackAudio = null;
+        }
+    }
+
+    updatePlaybackUI(isPlaying) {
+        this.updateButtonGroup('playbackBtn', {
+            text: isPlaying ? '⏸️ Stop Playback' : '▶️ Playback',
+            addClass: isPlaying ? 'playing' : null,
+            removeClass: isPlaying ? null : 'playing'
+        });
     }
 
     // File Loading
@@ -265,16 +433,24 @@ class SRTPlayer {
 
     // Event Listeners
     initEventListeners() {
-        // Button clicks
+        // File input buttons
         this.elements.loadMp4Btn.addEventListener('click', () => this.loadMp4());
         this.elements.loadSrtBtn.addEventListener('click', () => this.loadSrt());
-        this.elements.prevBtn.addEventListener('click', () => this.prevSentence());
-        this.elements.nextBtn.addEventListener('click', () => this.nextSentence());
-        this.elements.repeatBtn.addEventListener('click', () => this.playCurrentSentence());
-        this.elements.prevBtnLeft?.addEventListener('click', () => this.prevSentence());
-        this.elements.nextBtnLeft?.addEventListener('click', () => this.nextSentence());
-        this.elements.repeatBtnLeft?.addEventListener('click', () => this.playCurrentSentence());
         this.elements.lockBtn.addEventListener('click', () => this.toggleVideoLock());
+
+        // Dynamic control buttons - use event delegation
+        const handleButtonClick = (e) => {
+            const button = e.target.closest('.btn[data-action]');
+            if (!button) return;
+
+            const action = button.dataset.action;
+            if (this[action]) {
+                this[action]();
+            }
+        };
+
+        $('rightControls').addEventListener('click', handleButtonClick);
+        $('leftControls').addEventListener('click', handleButtonClick);
 
         // Toggle sentence list
         this.elements.toggleBtn.addEventListener('click', () => {

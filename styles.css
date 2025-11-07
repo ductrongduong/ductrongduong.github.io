@@ -31,19 +31,6 @@ body {
     z-index: 1000;
 }
 
-.now {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-}
-
-.now-right .btn {
-    padding: 20px 32px;
-    font-size: 22px;
-    min-width: 140px;
-    font-weight: 600;
-}
-
 .now-left-side {
     position: fixed;
     left: 20px;
@@ -54,17 +41,12 @@ body {
     gap: 8px;
     z-index: 1000;
 }
-.now-left-side .btn {
-    padding: 20px 32px;
-    font-size: 22px;
-    min-width: 140px;
-    font-weight: 600;
-}
+
 .now-right .btn,
 .now-left-side .btn {
     padding: 16px 20px;
     font-size: 20px;
-    min-width: 110px;   /* reduced min width */
+    min-width: 110px;
     font-weight: 600;
 }
 
@@ -102,6 +84,32 @@ body {
 
 #lockBtn.locked {
     background: #ef4444;
+    color: #fff;
+}
+
+.btn[id*="record"].recording {
+    background: #ef4444;
+    color: #fff;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.btn[id*="playback"]:disabled {
+    background: #475569;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.btn[id*="playback"].playing {
+    background: #10b981;
     color: #fff;
 }
 
