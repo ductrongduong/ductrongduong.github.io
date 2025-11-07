@@ -256,9 +256,11 @@ class SRTPlayer {
         });
 
         if (locked) {
-            this.elements.videoPlayer.setAttribute('controlslist', 'nodownload nofullscreen');
+            // Hide all video controls when locked
+            this.elements.videoPlayer.removeAttribute('controls');
         } else {
-            this.elements.videoPlayer.removeAttribute('controlslist');
+            // Show video controls when unlocked
+            this.elements.videoPlayer.setAttribute('controls', '');
         }
 
         this.saveState();
