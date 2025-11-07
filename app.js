@@ -30,6 +30,8 @@ class SRTPlayer {
             prevBtnLeft: $('prevBtnLeft'),
             nextBtnLeft: $('nextBtnLeft'),
             repeatBtnLeft: $('repeatBtnLeft'),
+            lockBtn: $('lockBtn'),
+
         };
 
         // State
@@ -38,6 +40,7 @@ class SRTPlayer {
         this.sentenceListVisible = true;
         this.onTimeUpdate = null;
         this.lastSwipe = 0;
+        this.isVideoLocked = false;
 
         // Initialize
         this.initEventListeners();
@@ -51,7 +54,8 @@ class SRTPlayer {
             currentIndex: this.currentIndex,
             cues: this.cues,
             notes: this.elements.notes?.value || '',
-            sentenceListVisible: this.sentenceListVisible
+            sentenceListVisible: this.sentenceListVisible,
+            isVideoLocked: this.isVideoLocked,
         };
         localStorage.setItem('srtPlayerState', JSON.stringify(state));
     }
@@ -68,6 +72,11 @@ class SRTPlayer {
 
             if (this.elements.notes && state.notes) {
                 this.elements.notes.value = state.notes;
+            }
+
+            this.isVideoLocked = state.isVideoLocked ?? false;
+            if (this.isVideoLocked) {
+                this.toggleVideoLock();
             }
 
             return true;
@@ -197,6 +206,22 @@ class SRTPlayer {
         this.elements.videoPlayer.addEventListener('timeupdate', this.onTimeUpdate);
     }
 
+    toggleVideoLock() {
+        this.isVideoLocked = !this.isVideoLocked;
+
+        if (this.isVideoLocked) {
+            this.elements.lockBtn.textContent = '🔒 Locked';
+            this.elements.lockBtn.classList.add('locked');
+            this.elements.videoPlayer.controls = false; // Hide all native controls
+        } else {
+            this.elements.lockBtn.textContent = '🔓 Unlock';
+            this.elements.lockBtn.classList.remove('locked');
+            this.elements.videoPlayer.controls = true; // Show native controls
+        }
+
+        this.saveState();
+    }
+
     // File Loading
     async autoLoadMp4() {
         this.elements.videoSource.src = DEFAULT_FILES.mp4;
@@ -249,6 +274,8 @@ class SRTPlayer {
         this.elements.prevBtnLeft?.addEventListener('click', () => this.prevSentence());
         this.elements.nextBtnLeft?.addEventListener('click', () => this.nextSentence());
         this.elements.repeatBtnLeft?.addEventListener('click', () => this.playCurrentSentence());
+        this.elements.lockBtn.addEventListener('click', () => this.toggleVideoLock());
+
         // Toggle sentence list
         this.elements.toggleBtn.addEventListener('click', () => {
             this.sentenceListVisible = !this.sentenceListVisible;

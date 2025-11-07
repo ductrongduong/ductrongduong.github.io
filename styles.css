@@ -68,6 +68,43 @@ body {
     font-weight: 600;
 }
 
+.video-container {
+    width: 100%;
+    margin-bottom: 18px;
+    position: relative;
+}
+
+.video-lock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    cursor: pointer;
+}
+
+.video-lock-overlay.active {
+    display: flex;
+}
+
+.lock-icon {
+    font-size: 48px;
+    color: #22d3ee;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 20px 30px;
+    border-radius: 12px;
+}
+
+#lockBtn.locked {
+    background: #ef4444;
+    color: #fff;
+}
+
 .now-left {
     flex: 1;
     min-width: 0;
