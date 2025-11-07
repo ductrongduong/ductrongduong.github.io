@@ -466,7 +466,7 @@ class SRTPlayer {
 
     updatePlaybackUI(isPlaying) {
         this.updateButtonGroup('playbackBtn', {
-            text: isPlaying ? '⏸️ Stop Playback' : '▶️ Playback',
+            text: isPlaying ? '⏸️' : '▶️',
             addClass: isPlaying ? 'playing' : null,
             removeClass: isPlaying ? null : 'playing'
         });

@@ -169,8 +169,8 @@ body {
     .now-right .btn,
     .now-left-side .btn {
         min-height: 50px;
-        min-width: 50px;
-        padding: 14px 8px;
+        min-width: 65px;
+        padding: 14px 10px;
         font-size: 16px;
     }
 
