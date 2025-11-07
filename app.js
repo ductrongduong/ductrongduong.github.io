@@ -5,8 +5,8 @@ const DEFAULT_FILES = {
 };
 
 const BUTTON_CONFIG = [
-    { id: 'record', label: '🎤 Start Recording', action: 'toggleRecording', disabled: false },
-    { id: 'playback', label: '▶️ Playback', action: 'playbackRecording', disabled: true },
+    { id: 'record', label: '🎤', action: 'toggleRecording', disabled: false },
+    { id: 'playback', label: '▶️', action: 'playbackRecording', disabled: true },
     { id: 'prev', label: '← Prev', action: 'prevSentence', disabled: false },
     { id: 'next', label: 'Next →', action: 'nextSentence', disabled: false },
     { id: 'repeat', label: 'Repeat', action: 'playCurrentSentence', disabled: false }
@@ -325,7 +325,7 @@ class SRTPlayer {
             this.mediaRecorder.stop();
             this.isRecording = false;
             this.updateButtonGroup('recordBtn', {
-                text: '🎤 Start Recording',
+                text: '🎤',
                 removeClass: 'recording'
             });
         }
