@@ -27,6 +27,9 @@ class SRTPlayer {
             toggleBtn: $('toggleSentenceListBtn'),
             repeatBtn: $('repeatBtn'),
             notes: $('notes'),
+            prevBtnLeft: $('prevBtnLeft'),
+            nextBtnLeft: $('nextBtnLeft'),
+            repeatBtnLeft: $('repeatBtnLeft'),
         };
 
         // State
@@ -243,7 +246,9 @@ class SRTPlayer {
         this.elements.prevBtn.addEventListener('click', () => this.prevSentence());
         this.elements.nextBtn.addEventListener('click', () => this.nextSentence());
         this.elements.repeatBtn.addEventListener('click', () => this.playCurrentSentence());
-
+        this.elements.prevBtnLeft?.addEventListener('click', () => this.prevSentence());
+        this.elements.nextBtnLeft?.addEventListener('click', () => this.nextSentence());
+        this.elements.repeatBtnLeft?.addEventListener('click', () => this.playCurrentSentence());
         // Toggle sentence list
         this.elements.toggleBtn.addEventListener('click', () => {
             this.sentenceListVisible = !this.sentenceListVisible;
