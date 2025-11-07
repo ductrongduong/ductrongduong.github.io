@@ -51,6 +51,8 @@ class SRTPlayer {
         this.mediaRecorder = null;
         this.audioChunks = [];
         this.recordedAudioURL = null;
+        this.recordedAudioBlob = null;
+        this.recordingMimeType = null;
         this.isRecording = false;
         this.playbackAudio = null;
 
@@ -291,32 +293,71 @@ class SRTPlayer {
 
     async startRecording() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.mediaRecorder = new MediaRecorder(stream);
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
+
+            // Detect supported MIME type for better mobile compatibility
+            let mimeType = 'audio/webm';
+            if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                mimeType = 'audio/mp4';
+            } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+                mimeType = 'audio/ogg;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+                mimeType = 'audio/wav';
+            }
+
+            this.mediaRecorder = new MediaRecorder(stream, { mimeType });
             this.audioChunks = [];
+            this.recordingMimeType = mimeType;
 
             this.mediaRecorder.addEventListener('dataavailable', event => {
-                this.audioChunks.push(event.data);
+                if (event.data.size > 0) {
+                    this.audioChunks.push(event.data);
+                }
             });
 
             this.mediaRecorder.addEventListener('stop', () => {
-                const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                const audioBlob = new Blob(this.audioChunks, { type: this.recordingMimeType });
                 this.recordedAudioURL = URL.createObjectURL(audioBlob);
+                this.recordedAudioBlob = audioBlob;
                 this.updateButtonGroup('playbackBtn', { disabled: false });
 
                 // Stop all tracks to release the microphone
                 stream.getTracks().forEach(track => track.stop());
             });
 
+            this.mediaRecorder.addEventListener('error', (event) => {
+                console.error('MediaRecorder error:', event);
+                alert('Recording error occurred. Please try again.');
+                this.stopRecording();
+            });
+
             this.mediaRecorder.start();
             this.isRecording = true;
             this.updateButtonGroup('recordBtn', {
-                text: '⏹️ Stop Recording',
+                text: '⏹️',
                 addClass: 'recording'
             });
         } catch (error) {
             console.error('Error accessing microphone:', error);
-            alert('Could not access microphone. Please grant permission.');
+            let errorMessage = 'Could not access microphone. ';
+            if (error.name === 'NotAllowedError') {
+                errorMessage += 'Please grant microphone permission.';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage += 'No microphone found.';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage += 'Your browser does not support audio recording.';
+            } else {
+                errorMessage += 'Please check your settings and try again.';
+            }
+            alert(errorMessage);
         }
     }
 
@@ -355,22 +396,61 @@ class SRTPlayer {
             this.playbackAudio = null;
         }
 
-        this.playbackAudio = new Audio(this.recordedAudioURL);
+        // Create audio element for better mobile compatibility
+        this.playbackAudio = new Audio();
+
+        // Set properties for iOS compatibility
+        this.playbackAudio.preload = 'auto';
+        this.playbackAudio.controls = false;
+
+        // Use blob directly if available for better compatibility
+        if (this.recordedAudioBlob) {
+            this.playbackAudio.src = URL.createObjectURL(this.recordedAudioBlob);
+        } else {
+            this.playbackAudio.src = this.recordedAudioURL;
+        }
+
         this.updatePlaybackUI(true);
+
+        // iOS requires user interaction, load first then play
+        this.playbackAudio.load();
 
         // Handle play promise to prevent AbortError
         const playPromise = this.playbackAudio.play();
 
         if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.error('Playback error:', error);
-                this.updatePlaybackUI(false);
-                this.playbackAudio = null;
-            });
+            playPromise
+                .then(() => {
+                    console.log('Playback started successfully');
+                })
+                .catch(error => {
+                    console.error('Playback error:', error);
+                    this.updatePlaybackUI(false);
+
+                    // Retry once for iOS
+                    if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
+                        setTimeout(() => {
+                            this.playbackAudio.play().catch(e => {
+                                console.error('Retry failed:', e);
+                                alert('Playback failed. Please try again.');
+                                this.playbackAudio = null;
+                            });
+                        }, 100);
+                    } else {
+                        this.playbackAudio = null;
+                    }
+                });
         }
 
         this.playbackAudio.addEventListener('ended', () => {
             this.updatePlaybackUI(false);
+            this.playbackAudio = null;
+        });
+
+        this.playbackAudio.addEventListener('error', (e) => {
+            console.error('Audio playback error:', e);
+            this.updatePlaybackUI(false);
+            alert('Could not play recording. The audio format may not be supported.');
             this.playbackAudio = null;
         });
     }

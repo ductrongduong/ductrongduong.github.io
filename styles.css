@@ -149,10 +149,38 @@ body {
     padding: 8px 16px;
     font-weight: 600;
     cursor: pointer;
+    -webkit-tap-highlight-color: rgba(34, 211, 238, 0.3);
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .btn:active {
     transform: scale(0.98);
+}
+
+/* Mobile-specific touch improvements */
+@media (max-width: 768px) {
+    .btn {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .now-right .btn,
+    .now-left-side .btn {
+        min-height: 50px;
+        min-width: 50px;
+        padding: 14px 8px;
+        font-size: 16px;
+    }
+
+    .now-right {
+        right: 10px;
+    }
+
+    .now-left-side {
+        left: 10px;
+    }
 }
 
 .now {
