@@ -37,6 +37,7 @@ class SRTPlayer {
             toggleBtn: $('toggleSentenceListBtn'),
             notes: $('notes'),
             lockBtn: $('lockBtn'),
+            selectTextBtn: $('selectTextBtn'),
             ...this.buttonGroups.right,
             ...this.buttonGroups.left
         };
@@ -266,6 +267,32 @@ class SRTPlayer {
         }
 
         this.saveState();
+    }
+
+    selectCurrentText() {
+        const textElement = this.elements.curText;
+        if (!textElement || !textElement.textContent) return;
+
+        // Create a range and select the text
+        const range = document.createRange();
+        range.selectNodeContents(textElement);
+
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        // Optional: Copy to clipboard for easier translation
+        try {
+            navigator.clipboard.writeText(textElement.textContent);
+            // Visual feedback
+            const originalBg = textElement.style.background;
+            textElement.style.background = '#22d3ee33';
+            setTimeout(() => {
+                textElement.style.background = originalBg;
+            }, 200);
+        } catch (err) {
+            console.log('Could not copy to clipboard:', err);
+        }
     }
 
     updateButton(baseId, config) {
@@ -519,6 +546,7 @@ class SRTPlayer {
         this.elements.loadMp4Btn.addEventListener('click', () => this.loadMp4());
         this.elements.loadSrtBtn.addEventListener('click', () => this.loadSrt());
         this.elements.lockBtn.addEventListener('click', () => this.toggleVideoLock());
+        this.elements.selectTextBtn.addEventListener('click', () => this.selectCurrentText());
 
         // Dynamic control buttons - use event delegation
         const handleButtonClick = (e) => {
