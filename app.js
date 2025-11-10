@@ -399,11 +399,11 @@ class SRTPlayer {
         }
     }
 
-    toggleRecording() {
+    async toggleRecording() {
         if (this.isRecording) {
             this.stopRecording();
         } else {
-            this.startRecording();
+            await this.startRecording();
         }
     }
 
@@ -521,8 +521,7 @@ class SRTPlayer {
         const file = this.elements.mp4File.files?.[0];
         if (!file) return;
 
-        const url = URL.createObjectURL(file);
-        this.elements.videoSource.src = url;
+        this.elements.videoSource.src = URL.createObjectURL(file);
         this.elements.videoPlayer.load();
     }
 
@@ -579,7 +578,7 @@ class SRTPlayer {
         });
 
         // Keyboard navigation
-        document.addEventListener('keydown', e => {
+        document.addEventListener('keydown', async e => {
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
             if (isInput && e.ctrlKey || !isInput) {
                 if (e.key === 'h') {
@@ -588,8 +587,12 @@ class SRTPlayer {
                     this.prevSentence();
                 } else if (e.key === '.' || e.key === 'ArrowRight') {
                     this.nextSentence();
-                } else if (e.key === 'r'|| e.key === 'm') {
+                } else if (e.key === 'r' || e.key === 'm') {
                     this.playCurrentSentence();
+                } else if (e.key === 'b') {
+                    await this.toggleRecording();
+                } else if (e.key === 'n') {
+                    await this.playbackRecording();
                 } else if (e.key === ' ') {
                     e.preventDefault();
                     if (this.elements.videoPlayer.paused) {
