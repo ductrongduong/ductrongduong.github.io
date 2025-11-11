@@ -651,11 +651,11 @@ class SRTPlayer {
             if (isInput && e.ctrlKey || !isInput) {
                 if (e.key === 'h') {
                     this.toggleBlur();
-                } else if (e.key === ',' || e.key === 'ArrowLeft') {
+                } else if (e.key === ',') {
                     this.prevSentence();
                 } else if (e.key === '.' || e.key === 'ArrowRight') {
                     this.nextSentence();
-                } else if (e.key === 'r' || e.key === 'm') {
+                } else if (e.key === 'r' || e.key === 'm' || e.key === 'ArrowLeft') {
                     this.playCurrentSentence();
                 } else if (e.key === 'b') {
                     await this.toggleRecording();
