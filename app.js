@@ -651,11 +651,11 @@ class SRTPlayer {
             if (isInput && e.ctrlKey || !isInput) {
                 if (e.key === 'h') {
                     this.toggleBlur();
-                } else if (e.key === ',') {
+                } else if (e.key === ',' || e.key === 'ArrowLeft') {
                     this.prevSentence();
                 } else if (e.key === '.' || e.key === 'ArrowRight') {
                     this.nextSentence();
-                } else if (e.key === 'r' || e.key === 'm' || e.key === 'ArrowLeft') {
+                } else if (e.key === 'r' || e.key === 'm') {
                     this.playCurrentSentence();
                 } else if (e.key === 'b') {
                     await this.toggleRecording();
@@ -681,7 +681,8 @@ class SRTPlayer {
 
             if (e.deltaX < -40) {
                 this.lastSwipe = now;
-                this.prevSentence();
+                // this.prevSentence();
+                this.playCurrentSentence();
             } else if (e.deltaX > 40) {
                 this.lastSwipe = now;
                 this.nextSentence();
