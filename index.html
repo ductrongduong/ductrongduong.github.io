@@ -23,7 +23,11 @@
             <button class="btn" id="loadSrtBtn">Load SRT</button>
         </div>
     </div>
-    <button class="btn" id="lockBtn">🔓 Unlock</button>
+    <div class="control-buttons">
+        <button class="btn" id="lockBtn">🔓 Unlock</button>
+        <button class="btn" id="autoBlurBtn">🔄 Auto-Blur OFF</button>
+        <button class="btn" id="blurBtn">🙈 Blur</button>
+    </div>
     <div class="video-container">
         <video id="videoPlayer" controls>
             <source id="videoSource" src="" type="video/mp4">
@@ -33,6 +37,11 @@
 
     <div class="now-right" id="rightControls"></div>
     <div class="now-left-side" id="leftControls"></div>
+
+    <!-- Text area for writing above now section -->
+    <div class="write-area">
+        <textarea id="writeArea" placeholder="Write your text here..." rows="2"></textarea>
+    </div>
 
     <!-- now area split into left (info) and right (controls). inline flex used for quick alignment -->
     <div class="now" id="now" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">

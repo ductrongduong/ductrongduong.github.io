@@ -9,7 +9,8 @@ const BUTTON_CONFIG = [
     { id: 'playback', label: '▶️', action: 'playbackRecording', disabled: true },
     { id: 'prev', label: '← Prev', action: 'prevSentence', disabled: false },
     { id: 'next', label: 'Next →', action: 'nextSentence', disabled: false },
-    { id: 'repeat', label: 'Repeat', action: 'playCurrentSentence', disabled: false }
+    { id: 'repeat', label: 'Repeat', action: 'playCurrentSentence', disabled: false },
+    { id: 'blurToggle', label: '🙈 Blur', action: 'toggleBlur', disabled: false }
 ];
 
 // DOM Helper
@@ -36,8 +37,11 @@ class SRTPlayer {
             sentenceList: $('sentenceList'),
             toggleBtn: $('toggleSentenceListBtn'),
             notes: $('notes'),
+            writeArea: $('writeArea'),
             lockBtn: $('lockBtn'),
             selectTextBtn: $('selectTextBtn'),
+            blurBtn: $('blurBtn'),
+            autoBlurBtn: $('autoBlurBtn'),
             ...this.buttonGroups.right,
             ...this.buttonGroups.left
         };
@@ -56,6 +60,8 @@ class SRTPlayer {
         this.recordingMimeType = null;
         this.isRecording = false;
         this.playbackAudio = null;
+        this.isAutoBlur = false;
+        this.isBlurred = false;
 
         // Initialize
         this.initEventListeners();
@@ -96,8 +102,11 @@ class SRTPlayer {
             currentIndex: this.currentIndex,
             cues: this.cues,
             notes: this.elements.notes?.value || '',
+            writeArea: this.elements.writeArea?.value || '',
             sentenceListVisible: this.sentenceListVisible,
             isVideoLocked: this.isVideoLocked,
+            isAutoBlur: this.isAutoBlur,
+            isBlurred: this.isBlurred,
         };
         localStorage.setItem('srtPlayerState', JSON.stringify(state));
     }
@@ -116,9 +125,20 @@ class SRTPlayer {
                 this.elements.notes.value = state.notes;
             }
 
+            if (this.elements.writeArea && state.writeArea) {
+                this.elements.writeArea.value = state.writeArea;
+            }
+
             this.isVideoLocked = state.isVideoLocked ?? false;
             if (this.isVideoLocked) {
                 this.toggleVideoLock();
+            }
+
+            this.isAutoBlur = state.isAutoBlur ?? false;
+            this.isBlurred = state.isBlurred ?? false;
+
+            if (this.isBlurred) {
+                this.elements.curText.classList.add('blurred');
             }
 
             return true;
@@ -185,6 +205,12 @@ class SRTPlayer {
             this.elements.curIdx.textContent = cue.idx;
             this.elements.curTime.textContent = `${this.secToTime(cue.start)} → ${this.secToTime(cue.end)}`;
             this.elements.curText.textContent = cue.text;
+
+            // Apply auto-blur when getting new sentence
+            if (this.isAutoBlur) {
+                this.elements.curText.classList.add('blurred');
+                this.isBlurred = true;
+            }
         }
         this.renderSentenceList();
         this.saveState();
@@ -265,6 +291,46 @@ class SRTPlayer {
             // Show video controls when unlocked
             this.elements.videoPlayer.setAttribute('controls', '');
         }
+
+        this.saveState();
+    }
+
+    toggleBlur() {
+        this.isBlurred = !this.isBlurred;
+
+        if (this.isBlurred) {
+            this.elements.curText.classList.add('blurred');
+        } else {
+            this.elements.curText.classList.remove('blurred');
+        }
+
+        const buttonText = this.isBlurred ? '👁️ Show' : '🙈 Blur';
+
+        // Update main blur button
+        this.updateButton('blurBtn', {
+            text: buttonText,
+            addClass: this.isBlurred ? 'active' : null,
+            removeClass: this.isBlurred ? null : 'active'
+        });
+
+        // Update blur toggle buttons in left/right controls
+        this.updateButtonGroup('blurToggleBtn', {
+            text: buttonText,
+            addClass: this.isBlurred ? 'active' : null,
+            removeClass: this.isBlurred ? null : 'active'
+        });
+
+        this.saveState();
+    }
+
+    toggleAutoBlur() {
+        this.isAutoBlur = !this.isAutoBlur;
+
+        this.updateButton('autoBlurBtn', {
+            text: this.isAutoBlur ? '🔄 Auto-Blur ON' : '🔄 Auto-Blur OFF',
+            addClass: this.isAutoBlur ? 'active' : null,
+            removeClass: this.isAutoBlur ? null : 'active'
+        });
 
         this.saveState();
     }
@@ -546,6 +612,8 @@ class SRTPlayer {
         this.elements.loadSrtBtn.addEventListener('click', () => this.loadSrt());
         this.elements.lockBtn.addEventListener('click', () => this.toggleVideoLock());
         this.elements.selectTextBtn.addEventListener('click', () => this.selectCurrentText());
+        this.elements.blurBtn?.addEventListener('click', () => this.toggleBlur());
+        this.elements.autoBlurBtn?.addEventListener('click', () => this.toggleAutoBlur());
 
         // Dynamic control buttons - use event delegation
         const handleButtonClick = (e) => {
@@ -582,7 +650,7 @@ class SRTPlayer {
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
             if (isInput && e.ctrlKey || !isInput) {
                 if (e.key === 'h') {
-                    this.elements.curText.classList.toggle('blurred');
+                    this.toggleBlur();
                 } else if (e.key === ',' || e.key === 'ArrowLeft') {
                     this.prevSentence();
                 } else if (e.key === '.' || e.key === 'ArrowRight') {
@@ -620,6 +688,36 @@ class SRTPlayer {
             }
         }, { passive: true });
     }
+
+    updateButtonStates() {
+        // Update blur button
+        if (this.elements.blurBtn) {
+            this.elements.blurBtn.textContent = this.isBlurred ? '👁️ Show' : '🙈 Blur';
+            if (this.isBlurred) {
+                this.elements.blurBtn.classList.add('active');
+            } else {
+                this.elements.blurBtn.classList.remove('active');
+            }
+        }
+
+        // Update auto-blur button
+        if (this.elements.autoBlurBtn) {
+            this.elements.autoBlurBtn.textContent = this.isAutoBlur ? '🔄 Auto-Blur ON' : '🔄 Auto-Blur OFF';
+            if (this.isAutoBlur) {
+                this.elements.autoBlurBtn.classList.add('active');
+            } else {
+                this.elements.autoBlurBtn.classList.remove('active');
+            }
+        }
+
+        // Update blur toggle buttons in left/right controls
+        const buttonText = this.isBlurred ? '👁️ Show' : '🙈 Blur';
+        this.updateButtonGroup('blurToggleBtn', {
+            text: buttonText,
+            addClass: this.isBlurred ? 'active' : null,
+            removeClass: this.isBlurred ? null : 'active'
+        });
+    }
 }
 
 // Initialize the application when DOM is ready
@@ -633,6 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Restore UI from saved state
         player.updateCurrentSentence();
         player.elements.toggleBtn.textContent = player.sentenceListVisible ? 'Hide Sentences' : 'Show Sentences';
+        player.updateButtonStates();
     } else {
         // Load defaults if no saved state
         player.autoLoadMp4();
