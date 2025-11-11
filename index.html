@@ -26,7 +26,6 @@
     <div class="control-buttons">
         <button class="btn" id="lockBtn">🔓 Unlock</button>
         <button class="btn" id="autoBlurBtn">🔄 Auto-Blur OFF</button>
-        <button class="btn" id="blurBtn">🙈 Blur</button>
     </div>
     <div class="video-container">
         <video id="videoPlayer" controls>
@@ -50,8 +49,12 @@
             <div id="curText">Load an SRT to begin.</div>
         </div>
     </div>
-    <button class="btn" id="selectTextBtn">📋 Select Text</button>
-    <button class="btn" id="toggleSentenceListBtn">Hide Sentences</button>
+    <div class="control-buttons">
+        <button class="btn" id="selectTextBtn">📋 Select Text</button>
+        <button class="btn" id="toggleSentenceListBtn">Hide Sentences</button>
+        <button class="btn" id="blurBtn">🙈 Blur</button>
+    </div>
+
     <div id="sentenceList"></div>
 </div>
 <script src="app.js"></script>
