@@ -49,6 +49,7 @@ class SRTPlayer {
         // State
         this.cues = [];
         this.currentIndex = -1;
+        this.currentSrtFile = null; // Track current SRT file name
         this.sentenceListVisible = true;
         this.onTimeUpdate = null;
         this.lastSwipe = 0;
@@ -100,6 +101,7 @@ class SRTPlayer {
     saveState() {
         const state = {
             currentIndex: this.currentIndex,
+            currentSrtFile: this.currentSrtFile,
             cues: this.cues,
             notes: this.elements.notes?.value || '',
             writeArea: this.elements.writeArea?.value || '',
@@ -109,6 +111,16 @@ class SRTPlayer {
             isBlurred: this.isBlurred,
         };
         localStorage.setItem('srtPlayerState', JSON.stringify(state));
+
+        // Save per-file currentIndex
+        if (this.currentSrtFile) {
+            const fileStates = JSON.parse(localStorage.getItem('srtFileStates') || '{}');
+            fileStates[this.currentSrtFile] = {
+                currentIndex: this.currentIndex,
+                lastAccessed: new Date().toISOString()
+            };
+            localStorage.setItem('srtFileStates', JSON.stringify(fileStates));
+        }
     }
 
     loadState() {
@@ -119,6 +131,7 @@ class SRTPlayer {
             const state = JSON.parse(saved);
             this.cues = state.cues || [];
             this.currentIndex = state.currentIndex ?? -1;
+            this.currentSrtFile = state.currentSrtFile || null;
             this.sentenceListVisible = state.sentenceListVisible ?? true;
 
             if (this.elements.notes && state.notes) {
@@ -145,6 +158,16 @@ class SRTPlayer {
         } catch (error) {
             console.error('Failed to load state:', error);
             return false;
+        }
+    }
+
+    getFileStateIndex(fileName) {
+        try {
+            const fileStates = JSON.parse(localStorage.getItem('srtFileStates') || '{}');
+            return fileStates[fileName]?.currentIndex ?? 0;
+        } catch (error) {
+            console.error('Failed to get file state:', error);
+            return 0;
         }
     }
 
@@ -576,7 +599,8 @@ class SRTPlayer {
             const response = await fetch(DEFAULT_FILES.srt);
             const text = await response.text();
             this.cues = this.parseSRT(text);
-            this.currentIndex = 0;
+            this.currentSrtFile = DEFAULT_FILES.srt;
+            this.currentIndex = this.getFileStateIndex(this.currentSrtFile);
             this.updateCurrentSentence();
         } catch (error) {
             console.error('Failed to load SRT file:', error);
@@ -598,7 +622,8 @@ class SRTPlayer {
         try {
             const text = await file.text();
             this.cues = this.parseSRT(text);
-            this.currentIndex = 0;
+            this.currentSrtFile = file.name;
+            this.currentIndex = this.getFileStateIndex(this.currentSrtFile);
             this.updateCurrentSentence();
         } catch (error) {
             console.error('Failed to load SRT file:', error);
